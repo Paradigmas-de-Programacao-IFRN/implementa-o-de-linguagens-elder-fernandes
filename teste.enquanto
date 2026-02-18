@@ -1,0 +1,71 @@
+# ========================================
+# TESTE PLP — TODAS AS TAREFAS
+# ========================================
+
+exiba "INICIO DOS TESTES";
+
+# -----------------------------
+# Tarefa 1 — / e ^
+# -----------------------------
+exiba "DIVISAO E EXPONENCIACAO";
+
+a := 10 / 2;
+escreva a;
+
+b := 2 ^ 5;
+escreva b;
+
+
+# -----------------------------
+# Tarefa 2 — ou e xor
+# -----------------------------
+exiba "OPERADORES LOGICOS";
+
+se verdadeiro ou falso entao
+    exiba "OU FUNCIONOU"
+senao
+    exiba "ERRO OU";
+
+se verdadeiro xor verdadeiro entao
+    exiba "ERRO XOR"
+senao
+    exiba "XOR FUNCIONOU";
+
+
+# -----------------------------
+# Tarefa 3 — < > >= <>
+# -----------------------------
+exiba "RELACIONAIS";
+
+se 3 < 5 entao
+    exiba "MENOR OK"
+senao
+    exiba "ERRO MENOR";
+
+se 7 > 2 entao
+    exiba "MAIOR OK"
+senao
+    exiba "ERRO MAIOR";
+
+se 5 >= 5 entao
+    exiba "MAIOR IGUAL OK"
+senao
+    exiba "ERRO >=";
+
+se 4 <> 9 entao
+    exiba "DIFERENTE OK"
+senao
+    exiba "ERRO DIFERENTE";
+
+
+# -----------------------------
+# Tarefa 4 — ; finalizando comando
+# -----------------------------
+exiba "TESTE SEQUENCIA";
+
+x := 1;
+x := x + 1;
+x := x + 1;
+escreva x;
+
+exiba "FIM DOS TESTES";

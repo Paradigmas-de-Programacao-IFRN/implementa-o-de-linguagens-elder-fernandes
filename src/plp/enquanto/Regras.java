@@ -1,162 +1,186 @@
 package plp.enquanto;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import plp.enquanto.parser.*;
 
-import plp.enquanto.Linguagem.*;
-import plp.enquanto.parser.EnquantoBaseListener;
-import plp.enquanto.parser.EnquantoParser.*;
+public class Regras extends EnquantoBaseVisitor<Object> {
 
-import static java.lang.Integer.parseInt;
+    @Override
+    public Object visitPrograma(EnquantoParser.ProgramaContext ctx) {
+        List<Linguagem.Comando> comandos =
+                (List<Linguagem.Comando>) visit(ctx.seqComando());
+        return new Linguagem.Programa(comandos);
+    }
 
-public class Regras extends EnquantoBaseListener {
-	private final Leia leia;
-	private final Skip skip;
-	private final Propriedades valores;
+    @Override
+    public Object visitSeqComando(EnquantoParser.SeqComandoContext ctx) {
+        List<Linguagem.Comando> lista = new ArrayList<>();
+        for (EnquantoParser.ComandoContext cmd : ctx.comando()) {
+            lista.add((Linguagem.Comando) visit(cmd));
+        }
+        return lista;
+    }
 
-	private Programa programa;
+    @Override
+    public Object visitBloco(EnquantoParser.BlocoContext ctx) {
+        List<Linguagem.Comando> lista =
+                (List<Linguagem.Comando>) visit(ctx.seqComando());
+        return new Linguagem.Bloco(lista);
+    }
 
-	public Regras() {
-		leia = new Leia();
-		skip = new Skip();
-		valores = new Propriedades();
-	}
+    @Override
+    public Object visitSkip(EnquantoParser.SkipContext ctx) {
+        return Linguagem.skip;
+    }
 
-	public Programa getPrograma() {
-		return programa;
-	}
+    @Override
+    public Object visitAtribuicao(EnquantoParser.AtribuicaoContext ctx) {
+        return new Linguagem.Atribuicao(
+                ctx.ID().getText(),
+                (Linguagem.Expressao) visit(ctx.expressao())
+        );
+    }
 
-	@Override
-	public void exitBool(BoolContext ctx) {
-		valores.insira(ctx, new Booleano("verdadeiro".equals(ctx.getText())));
-	}
+    @Override
+    public Object visitExiba(EnquantoParser.ExibaContext ctx) {
+        return new Linguagem.Exiba(
+                ctx.TEXTO().getText().replace("\"", "")
+        );
+    }
 
-	@Override
-	public void exitLeia(LeiaContext ctx) {
-		valores.insira(ctx, leia);
-	}
+    @Override
+    public Object visitEscreva(EnquantoParser.EscrevaContext ctx) {
+        return new Linguagem.Escreva(
+                (Linguagem.Expressao) visit(ctx.expressao())
+        );
+    }
 
-	@Override
-	public void exitSe(SeContext ctx) {
-		final Bool condicao = valores.pegue(ctx.booleano());
-		final Comando entao = valores.pegue(ctx.comando(0));
-		final Comando senao = valores.pegue(ctx.comando(1));
-		valores.insira(ctx, new Se(condicao, entao, senao));
-	}
+    @Override
+    public Object visitEnquanto(EnquantoParser.EnquantoContext ctx) {
+        return new Linguagem.Enquanto(
+                (Linguagem.Bool) visit(ctx.booleano()),
+                (Linguagem.Comando) visit(ctx.comando())
+        );
+    }
 
-	@Override
-	public void exitInteiro(InteiroContext ctx) {
-		valores.insira(ctx, new Inteiro(parseInt(ctx.getText())));
-	}
+    @Override
+    public Object visitSe(EnquantoParser.SeContext ctx) {
+        return new Linguagem.Se(
+                (Linguagem.Bool) visit(ctx.booleano()),
+                (Linguagem.Comando) visit(ctx.comando(0)),
+                (Linguagem.Comando) visit(ctx.comando(1))
+        );
+    }
 
-	@Override
-	public void exitSkip(SkipContext ctx) {
-		valores.insira(ctx, skip);
-	}
+    // ================= EXPRESSÕES =================
 
-	@Override
-	public void exitEscreva(EscrevaContext ctx) {
-		final Expressao exp = valores.pegue(ctx.expressao());
-		valores.insira(ctx, new Escreva(exp));
-	}
+    @Override
+    public Object visitInt(EnquantoParser.IntContext ctx) {
+        return new Linguagem.Inteiro(
+                Integer.parseInt(ctx.INT().getText())
+        );
+    }
 
-	@Override
-	public void exitPrograma(ProgramaContext ctx) {
-		final List<Comando> cmds = valores.pegue(ctx.seqComando());
-		programa = new Programa(cmds);
-		valores.insira(ctx, programa);
-	}
+    @Override
+    public Object visitId(EnquantoParser.IdContext ctx) {
+        return new Linguagem.Id(
+                ctx.ID().getText()
+        );
+    }
 
-	@Override
-	public void exitId(IdContext ctx) {
-		final String id = ctx.ID().getText();
-		valores.insira(ctx, new Id(id));
-	}
+    @Override
+    public Object visitLeia(EnquantoParser.LeiaContext ctx) {
+        return Linguagem.leia;
+    }
 
-	@Override
-	public void exitSeqComando(SeqComandoContext ctx) {
-		final List<Comando> comandos = new ArrayList<>();
-		for (ComandoContext c : ctx.comando()) {
-			comandos.add(valores.pegue(c));
-		}
-		valores.insira(ctx, comandos);
-	}
+    @Override
+    public Object visitExpPar(EnquantoParser.ExpParContext ctx) {
+        return visit(ctx.expressao());
+    }
 
-	@Override
-	public void exitAtribuicao(AtribuicaoContext ctx) {
-		final String id = ctx.ID().getText();
-		final Expressao exp = valores.pegue(ctx.expressao());
-		valores.insira(ctx, new Atribuicao(id, exp));
-	}
+    @Override
+    public Object visitOpBin(EnquantoParser.OpBinContext ctx) {
 
-	@Override
-	public void exitBloco(BlocoContext ctx) {
-		final List<Comando> cmds = valores.pegue(ctx.seqComando());
-		valores.insira(ctx, new Bloco(cmds));
-	}
+        Linguagem.Expressao e1 =
+                (Linguagem.Expressao) visit(ctx.expressao(0));
 
-	@Override
-	public void exitOpBin(OpBinContext ctx) {
-		final Expressao esq = valores.pegue(ctx.expressao(0));
-		final Expressao dir = valores.pegue(ctx.expressao(1));
-		final String op = ctx.getChild(1).getText();
-		final Expressao exp = switch (op) {
-			case "*" -> new ExpMult(esq, dir);
-			case "-" -> new ExpSub(esq, dir);
-			default  -> new ExpSoma(esq, dir);
-		};
-		valores.insira(ctx, exp);
-	}
+        Linguagem.Expressao e2 =
+                (Linguagem.Expressao) visit(ctx.expressao(1));
 
-	@Override
-	public void exitEnquanto(EnquantoContext ctx) {
-		final Bool condicao = valores.pegue(ctx.booleano());
-		final Comando comando = valores.pegue(ctx.comando());
-		valores.insira(ctx, new Enquanto(condicao, comando));
-	}
+        String op = ctx.getChild(1).getText();
 
-	@Override
-	public void exitELogico(ELogicoContext ctx) {
-		final Bool esq = valores.pegue(ctx.booleano(0));
-		final Bool dir = valores.pegue(ctx.booleano(1));
-		valores.insira(ctx, new ELogico(esq, dir));
-	}
+        switch (op) {
+            case "+": return new Linguagem.ExpSoma(e1, e2);
+            case "-": return new Linguagem.ExpSub(e1, e2);
+            case "*": return new Linguagem.ExpMult(e1, e2);
+            case "/": return new Linguagem.ExpDiv(e1, e2);
+            case "^": return new Linguagem.ExpPot(e1, e2);
+        }
+        throw new RuntimeException("Operador desconhecido: " + op);
+    }
 
-	@Override
-	public void exitBoolPar(BoolParContext ctx) {
-		final Bool booleano = valores.pegue(ctx.booleano());
-		valores.insira(ctx, booleano);
-	}
+    @Override
+    public Object visitOpRel(EnquantoParser.OpRelContext ctx) {
 
-	@Override
-	public void exitNaoLogico(NaoLogicoContext ctx) {
-		final Bool b = valores.pegue(ctx.booleano());
-		valores.insira(ctx, new NaoLogico(b));
-	}
+        Linguagem.Expressao e1 =
+                (Linguagem.Expressao) visit(ctx.expressao(0));
 
-	@Override
-	public void exitExpPar(ExpParContext ctx) {
-		final Expressao exp = valores.pegue(ctx.expressao());
-		valores.insira(ctx, exp);
-	}
+        Linguagem.Expressao e2 =
+                (Linguagem.Expressao) visit(ctx.expressao(1));
 
-	@Override
-	public void exitExiba(ExibaContext ctx) {
-		final String t = ctx.TEXTO().getText();
-		final String texto = t.substring(1, t.length() - 1);
-		valores.insira(ctx, new Exiba(texto));
-	}
+        String op = ctx.getChild(1).getText();
 
-	@Override
-	public void exitOpRel(OpRelContext ctx) {
-		final Expressao esq = valores.pegue(ctx.expressao(0));
-		final Expressao dir = valores.pegue(ctx.expressao(1));
-		final String op = ctx.getChild(1).getText();
-		final Bool exp = switch (op) {
-			case "="  -> new ExpIgual(esq, dir);
-			case "<=" -> new ExpMenorIgual(esq, dir);
-			default   -> new ExpIgual(esq, esq);
-		};
-		valores.insira(ctx, exp);
-	}
+        switch (op) {
+            case "=": return new Linguagem.ExpIgual(e1, e2);
+            case "<=": return new Linguagem.ExpMenorIgual(e1, e2);
+            case "<": return new Linguagem.ExpMenor(e1, e2);
+            case ">": return new Linguagem.ExpMaior(e1, e2);
+            case ">=": return new Linguagem.ExpMaiorIgual(e1, e2);
+            case "<>": return new Linguagem.ExpDiferente(e1, e2);
+        }
+        throw new RuntimeException("Operador relacional desconhecido: " + op);
+    }
+
+    @Override
+    public Object visitBool(EnquantoParser.BoolContext ctx) {
+        return new Linguagem.Booleano(
+                ctx.BOOLEANO().getText().equals("verdadeiro")
+        );
+    }
+
+    @Override
+    public Object visitBoolPar(EnquantoParser.BoolParContext ctx) {
+        return visit(ctx.booleano());
+    }
+
+    @Override
+    public Object visitNaoLogico(EnquantoParser.NaoLogicoContext ctx) {
+        return new Linguagem.NaoLogico(
+                (Linguagem.Bool) visit(ctx.booleano())
+        );
+    }
+
+    @Override
+    public Object visitELogico(EnquantoParser.ELogicoContext ctx) {
+        return new Linguagem.ELogico(
+                (Linguagem.Bool) visit(ctx.booleano(0)),
+                (Linguagem.Bool) visit(ctx.booleano(1))
+        );
+    }
+
+    @Override
+    public Object visitOuLogico(EnquantoParser.OuLogicoContext ctx) {
+        return new Linguagem.OuLogico(
+                (Linguagem.Bool) visit(ctx.booleano(0)),
+                (Linguagem.Bool) visit(ctx.booleano(1))
+        );
+    }
+
+    @Override
+    public Object visitXorLogico(EnquantoParser.XorLogicoContext ctx) {
+        return new Linguagem.XorLogico(
+                (Linguagem.Bool) visit(ctx.booleano(0)),
+                (Linguagem.Bool) visit(ctx.booleano(1))
+        );
+    }
 }

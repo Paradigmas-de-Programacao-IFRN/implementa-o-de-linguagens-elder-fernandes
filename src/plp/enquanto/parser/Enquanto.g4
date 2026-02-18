@@ -1,10 +1,17 @@
 grammar Enquanto;
 
-programa : seqComando;     // sequência de comandos
+@header {
+package plp.enquanto.parser;
+}
 
-seqComando: comando (';' comando)* ;
+programa : seqComando;
 
-comando: ID ':=' expressao                               # atribuicao
+seqComando
+    : (comando ';')+
+    ;
+
+comando
+       : ID ':=' expressao                               # atribuicao
        | 'skip'                                          # skip
        | 'se' booleano 'entao' comando 'senao' comando   # se
        | 'enquanto' booleano 'faca' comando              # enquanto
@@ -13,22 +20,30 @@ comando: ID ':=' expressao                               # atribuicao
        | '{' seqComando '}'                              # bloco
        ;
 
-expressao: INT                                           # inteiro
+expressao
+         : INT                                           # int
          | 'leia'                                        # leia
          | ID                                            # id
-         | expressao '*' expressao                       # opBin
-         | expressao ('+' | '-') expressao               # opBin
-         | '(' expressao ')'                             # expPar
+         | '(' expressao ')'                             # ExpPar
+         | expressao '^' expressao                       # OpBin
+         | expressao ('*' | '/') expressao               # OpBin
+         | expressao ('+' | '-') expressao               # OpBin
          ;
 
-booleano: BOOLEANO                                       # bool
-        | expressao '=' expressao                        # opRel
-        | expressao '<=' expressao                       # opRel
-        | 'nao' booleano                                 # naoLogico
-        | booleano 'e' booleano                          # eLogico
-        | '(' booleano ')'                               # boolPar
+booleano
+        : BOOLEANO                                       # Bool
+        | '(' booleano ')'                               # BoolPar
+        | expressao '=' expressao                        # OpRel
+        | expressao '<=' expressao                       # OpRel
+        | expressao '<' expressao                        # OpRel
+        | expressao '>' expressao                        # OpRel
+        | expressao '>=' expressao                       # OpRel
+        | expressao '<>' expressao                       # OpRel
+        | 'nao' booleano                                 # NaoLogico
+        | booleano 'e' booleano                          # ELogico
+        | booleano 'ou' booleano                         # OuLogico
+        | booleano 'xor' booleano                        # XorLogico
         ;
-
 
 BOOLEANO: 'verdadeiro' | 'falso';
 INT: ('0'..'9')+ ;
